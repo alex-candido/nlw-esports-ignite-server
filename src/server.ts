@@ -1,29 +1,90 @@
+import { PrismaClient } from '@prisma/client';
 import express from 'express';
 
 const app = express();
+app.use(express.json())
 
-app.get('/games', (req, res) => {
-  return res.json([]);
+const prisma = new PrismaClient({
+  log: ['query']
 });
 
-app.post('/ads', (req, res) => {
-  return res.status(201).json([]);
+app.get('/games', async (req, res) => {
+  const games = await prisma.game.findMany({
+    include: {
+      _count: {
+        select: {
+          ads: true,
+        }
+      }
+    }
+  })
+  
+  return res.json(games);
 });
 
-app.get('/games/:id/ads', (req, res) => {
-  // const gamesId  = req.params.id;
+app.post('/games/:id/ads', async (req, res) => {
+  const gameId = req.params.id;
+  const body = req.body
 
-  return res.json([
-    {id: 1, name: 'Anúncio 1'},
-    {id: 2, name: 'Anúncio 2'},
-    {id: 3, name: 'Anúncio 3'},
-  ])
+  const ad = await prisma.ad.create({
+    data: {
+      gameId,
+      name: body.name,
+      yearsPlaying: body.yearsPlaying,
+      discord: body.discord,
+      weekDays: body.weekDays.join(','),
+      hourStart: body.hourStart,
+      hourEnd: body.hourEnd,
+      useVoiceChannel: body.useVoiceChannel,
+    },
+  })
+
+  return res.status(201).json(body);
+});
+
+app.get('/games/:id/ads', async (req, res) => {
+  const gamesId  = req.params.id;
+
+  const ads = await prisma.ad.findMany({
+    select: {
+      id: true,
+      name: true,
+      weekDays: true,
+      useVoiceChannel: true,
+      yearsPlaying: true,
+      hourStart: true,
+      hourEnd: true,
+    },
+    where: {
+      gameId: gamesId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  return res.json(ads.map(ad => {
+    return {
+      ...ad,
+      weekDays: ad.weekDays.split(','),
+    }
+  }))
 })
 
-app.get('/games/:id/discord', (req, res) => {
-  // const addId  = req.params.id;
+app.get('/ads/:id/discord', async (req, res) => {
+  const addId  = req.params.id;
 
-  return res.json([])
+  const ad = await prisma.ad.findUniqueOrThrow({
+    select: {
+      discord: true,
+    },
+    where: {
+      id: addId,
+    }
+  })
+  return res.json({
+    discord: ad.discord,
+  })
 })
 
 app.listen(4002, () => console.log("Servidor está rodando na porta 4002"))
