@@ -31,7 +31,7 @@ Find your Duo é um projeto desenvolvido na NLW, a etapa server tem como funcion
 
 - Clone esse repositório
 ```
-$ git clone https://github.com/alex-candido/nlw-esports-ignite-web.git
+$ git clone https://github.com/alex-candido/nlw-esports-ignite-server.git
 ```
 - Instalar dependências
 ```
